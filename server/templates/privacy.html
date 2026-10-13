@@ -1,0 +1,119 @@
+{% extends "base.html" %}
+{% block title %}Privacy Policy - Circle Planner{% endblock %}
+{% block content %}
+<div class="page">
+  <div class="eyebrow">Privacy Policy</div>
+  <h1>Circle Planner</h1>
+  <div class="subtitle">A private, invite-only group for planning real-world get-togethers — not a marketing list, not an open platform.</div>
+
+  <div class="meta">
+    <span><strong>Effective:</strong> October 13, 2026</span>
+    <span><strong>Scale:</strong> capped at 25 households</span>
+    <span><strong>Money:</strong> none changes hands — this is a community trust experiment, not a commercial product</span>
+  </div>
+
+  <div class="callout">
+    <strong>What this is.</strong> Circle Planner is a small, invite-only group where an AI assistant (Claude) talks with each member privately by text to help organize real get-togethers — coffee, a soccer carpool, a kids' playdate, a backpacking trip. There is no group chat. Members never see each other's private messages. This page explains what gets collected, what gets kept, what gets thrown away, and who can see what.
+  </div>
+
+  <h2><span class="num">01</span>The short version</h2>
+  <p>You text privately with Claude. Claude turns what you share — your availability, what you're offering or looking for, who you already trust — into event proposals for the group. Most of the actual conversation is treated as scratch paper and discarded once the useful facts are pulled out of it. A short list of things is kept on purpose, because keeping them is what makes the group safe and functional. Those things are listed plainly below — nothing is buried in the fine print.</p>
+
+  <h2><span class="num">02</span>What we collect, and why</h2>
+  <p>Everything is collected because an event needs it, not because we're building a marketing profile. In practice, that's:</p>
+  <ul>
+    <li><strong>Contact basics</strong> — your name, phone number, and household composition (who's an adult, who's a child and their age), and, from the join form, the name of the member who invited you.</li>
+    <li><strong>What you offer and what you're looking for</strong> — e.g. "I can host up to six people," "looking for adult-only hangouts on weeknights," "willing to drive other kids to soccer."</li>
+    <li><strong>Availability</strong> — the general shape of your week, so Claude doesn't propose things you can't do.</li>
+    <li><strong>Trust signals between members</strong> — directional, one-on-one impressions ("I trust X to watch my kid," "I'd rather not be on a trip with Y") that Claude uses to decide who an event gets proposed to. These are never shown to the other person by name.</li>
+    <li><strong>Event history</strong> — what was proposed, who confirmed, what actually happened, and how people said it went afterward.</li>
+  </ul>
+
+  <h3>What gets discarded</h3>
+  <p>The message-by-message back-and-forth with Claude is treated as working memory: Claude reads it, pulls out the structured facts above, and then the raw conversation itself is not kept as a permanent record. There are three deliberate exceptions, because these specifically need to be retained in their own words rather than reduced to a data point:</p>
+  <ol>
+    <li>The actual text of a vouch or introduction, when a member invites someone new — because that person's credibility rests on what was actually said.</li>
+    <li>The detail behind a safety concern (a "red flag," defined below).</li>
+    <li>A logged safety acknowledgment before a child is dropped off with another household (also below).</li>
+  </ol>
+
+  <h2><span class="num">03</span>Trust concerns — and when something gets escalated</h2>
+  <p>If you tell Claude your trust in another member has gone down, Claude will directly ask whether it's a safety concern. That's not optional — a lowered trust signal always triggers the question.</p>
+  <div class="tierwrap">
+    <div class="tier t1">
+      <div class="tier-label">Yellow flag</div>
+      <p>Vague discomfort, no specific incident, no child involved. Handled by Claude in your private conversation. May quietly affect future matching. <strong>Never grounds for removal from the group.</strong></p>
+    </div>
+    <div class="tier t2">
+      <div class="tier-label">Red flag</div>
+      <p>Any specific incident, or anything involving a child regardless of how it's phrased. Escalated to a trained participant — never dropped into ordinary group administration. If you decline to give detail, Claude still escalates that a concern was raised.</p>
+    </div>
+  </div>
+  <p>An ambiguous or hedged answer is never resolved downward into the easier category — it's treated as a red flag and escalated.</p>
+
+  <h2><span class="num">04</span>Who can see what — the disclosure ladder</h2>
+  <p>Not every member sees the same thing. What's shared scales with what's actually needed:</p>
+
+  <div class="ladder-item">
+    <div class="lvl">Level 1 — Aggregate self-report</div>
+    <p>Always available to you, no reason needed. "How am I fitting in? What would get me more invites?" Statistical and behavioral only — never another member's private detail.</p>
+  </div>
+  <div class="ladder-item">
+    <div class="lvl">Level 2 — Named individual, light reason required</div>
+    <p>A pending invite with someone qualifies automatically. Returns a general profile and connection context — not raw message history.</p>
+  </div>
+  <div class="ladder-item">
+    <div class="lvl">Level 3 — Full safety-relevant history</div>
+    <p>Reserved for an actual live decision about dropping your child off with another household. Automatically delivered when that decision is live, covering every supervising adult involved. You have to actively confirm you've read it before the event proceeds, and that confirmation is timestamped and kept on file.</p>
+  </div>
+
+  <h2><span class="num">05</span>Kids: extra care, extra process</h2>
+  <p>A handful of rules apply specifically when children are involved:</p>
+  <ul>
+    <li>Anything involving supervising someone else's child requires an explicit offer, screened and tiered — it's never assumed from a general "I'm friendly" profile.</li>
+    <li>Certain offers (like driving or overnight supervision of other people's kids) require a background check and are marked <span class="mono">pending screening</span> until cleared. An unscreened offer is never treated as active.</li>
+    <li>Before a child is actually dropped off with another household, the receiving parent gets the full Level 3 disclosure (above) and has to confirm reading it. What was actually shown to them is saved, not just the fact that they clicked confirm.</li>
+  </ul>
+
+  <h2><span class="num">06</span>What the person running the group can and can't see</h2>
+  <p>The admin (the group's organizer) gets operational facts — event counts, participation, whether someone's background check is cleared — not a psychological readout of individual members.</p>
+  <div class="tablewrap">
+  <table>
+    <tr><th>Admin can ask about</th><th>Admin cannot get</th></tr>
+    <tr><td>Why an event happened, aggregate stats, coverage/credential status</td><td>Who disclosed something, or private message content</td></tr>
+    <tr><td>Whether the system's rules are working as designed</td><td>A named member's trust level toward another named member</td></tr>
+    <tr><td>That a safety escalation occurred</td><td>The contents of that escalation, unless the admin is themselves a trained participant handling it</td></tr>
+  </table>
+  </div>
+  <p>Direct feedback you send to admin on purpose (a complaint, "I need help moving this weekend") is not covered by any of this — that's just you talking to admin, same as texting a friend who happens to run the group. And the admin is a member too: questions about their own standing in the group get answered the same way anyone else's would, with no backstage access to their own social read.</p>
+  <p>Honest disclosure: during troubleshooting, whoever operates the underlying system may occasionally see raw data directly rather than through the normal channels above. We're telling you that plainly rather than promising a guarantee we can't fully back.</p>
+
+  <h2><span class="num">07</span>Consent and how you join</h2>
+  <p>Joining starts with you. On the <a href="/join">join page</a> you enter your mobile number and the name of the member who invited you, and tick a consent box that is never pre-checked. We then send one text asking you to reply <strong>YES</strong>; nothing further is collected until you do. Before any other data is collected, every member reads and agrees to:</p>
+  <ul>
+    <li>A liability waiver for group activities.</li>
+    <li>An acknowledgment of how the group's trust and escalation system works — not a click-through, an actual read.</li>
+    <li>This data policy.</li>
+  </ul>
+  <p>Households with children additionally sign an emergency medical consent and, separately, the Level 3 acknowledgment described above — the first time that family is actually part of a live drop-off decision, not before.</p>
+
+  <h2><span class="num">08</span>Texting and opting out</h2>
+  <div class="optout-box">
+    <p>After you submit the <a href="/join">join page</a>, you'll receive a text with this disclosure: by replying <strong>YES</strong>, you consent to receive text messages from Circle Planner about event planning, availability, and reminders. This is a private, invite-only group — not a marketing list. Consent is not a condition of participation. Msg &amp; data rates may apply. Message frequency varies. Reply <strong>HELP</strong> for help. Onboarding questions only begin after you reply YES.</p>
+    <p>Unsubscribe anytime by replying <span class="stop">STOP</span>. You can rejoin later by asking the group's organizer to re-invite you.</p>
+  </div>
+  <p><strong>We do not sell or share your SMS opt-in data or personal information with third parties for marketing purposes.</strong> Your mobile number is passed only to our messaging provider (Twilio) so that texts can be delivered, and is not used for any other purpose.</p>
+
+  <h2><span class="num">09</span>If you leave the group</h2>
+  <p>You can leave at any time. On departure, your structured profile data is removed from active matching. Retained records tied to a specific legal acknowledgment (like a past Level 3 drop-off confirmation) are kept only as long as needed for the safety purpose they were made for.</p>
+
+  <hr class="rule">
+
+  <p class="contact"><strong>Questions about this policy or your data?</strong> Ask Claude directly in your private conversation, reply HELP to any Circle Planner text{% if support_email %}, or email {{ support_email }}{% endif %}.</p>
+
+  <footer>
+    This is a small, non-commercial group (25 households, invite-only) — not a company with a legal or compliance department. This policy is written plainly and in good faith to describe what actually happens with your data. It is not a substitute for professional legal advice, and the group's organizer is working with counsel to formalize the legal documentation referenced above.
+  </footer>
+</div>
+
+{% endblock %}

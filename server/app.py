@@ -1,30 +1,49 @@
 """
-Webhook server: receives incoming SMS from Twilio and replies.
+Webhook + join form for Circle Planner.
 
-This version implements the real consent gate (spec-required, not
-placeholder): JOIN -> disclosure -> YES, before anything else happens.
-Nothing past that gate is wired to the real engine yet — once someone
-has consented, we hand off to a stub that will become real onboarding
+Opt-in path (the only one): the public /join form collects a mobile
+number, the inviting member's name, and an unchecked consent box. Submitting
+sends ONE text containing the full disclosure; the person is enrolled only
+after replying YES (double opt-in). STOP and HELP work at any point.
+
+Nothing past the consent gate is wired to the real engine yet -- once
+someone has consented, replies go to a stub that will become onboarding
 and event logic later.
 
-Deploy target: Render (or similar always-on host). Do NOT run this
-in the sandboxed workspace — it needs a real public URL for Twilio
-to reach.
+Deploy target: Render. Needs a real public URL for Twilio to reach.
+
+Optional environment variables (set in the Render dashboard):
+  TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, TWILIO_MESSAGING_SERVICE_SID
+      -> required for the join form to actually send its confirmation text
+  SUPPORT_EMAIL   -> shown on the Privacy and Terms pages if set
+  PUBLIC_BASE_URL -> defaults to the Render URL below
 """
 
+import json
 import os
-from flask import Flask, request
+import re
+import time
+from datetime import datetime, timezone
+
+from flask import Flask, render_template, request
 from twilio.twiml.messaging_response import MessagingResponse
 
 app = Flask(__name__)
 
-# Very simple in-memory log and state for now — swap for real storage later.
-# State is per-phone-number and resets if the server restarts (Render free
-# tier can spin down). Fine for a proof-of-flow test; not fine for real use.
-INCOMING_LOG = []
+PUBLIC_BASE_URL = os.environ.get("PUBLIC_BASE_URL", "https://social-app-dzp6.onrender.com").rstrip("/")
+SUPPORT_EMAIL = os.environ.get("SUPPORT_EMAIL", "").strip()
 
-# from_number -> one of: "new", "awaiting_consent", "consented"
-CONSENT_STATE = {}
+# In-memory state for now. Resets when the server restarts (Render free tier
+# spins down when idle). Fine for proving the flow; not fine for real use.
+INCOMING_LOG = []
+CONSENT_STATE = {}   # from_number -> "new" | "awaiting_consent" | "consented"
+OPT_INS = []         # form submissions (also printed to the Render log)
+LAST_FORM_TEXT = {}  # number -> epoch seconds of last confirmation text
+IP_HITS = {}         # ip -> list of epoch seconds
+
+NUMBER_COOLDOWN_SECONDS = 60 * 60
+IP_LIMIT = 5
+IP_WINDOW_SECONDS = 60 * 60
 
 CONSENT_DISCLOSURE = (
     "By replying YES, you consent to receive text messages from Circle "
@@ -52,6 +71,79 @@ HELP_MESSAGE = (
 )
 
 
+# ----------------------------------------------------------------- pages
+
+@app.route("/", methods=["GET"])
+def health_check():
+    return "Server is up. Waiting for texts."
+
+
+@app.route("/privacy", methods=["GET"])
+def privacy():
+    return render_template("privacy.html", support_email=SUPPORT_EMAIL)
+
+
+@app.route("/terms", methods=["GET"])
+def terms():
+    return render_template("terms.html", support_email=SUPPORT_EMAIL)
+
+
+@app.route("/join", methods=["GET", "POST"])
+def join():
+    if request.method == "GET":
+        return render_template("join.html")
+
+    raw_phone = request.form.get("phone", "")
+    invited_by = request.form.get("invited_by", "").strip()
+    consented = request.form.get("consent") == "yes"
+
+    def again(error):
+        return render_template("join.html", error=error, phone=raw_phone, invited_by=invited_by), 400
+
+    number = _normalize_us_number(raw_phone)
+    if not number:
+        return again("Please enter a valid US mobile number.")
+    if not invited_by or len(invited_by) > 120:
+        return again("Please tell us which member invited you.")
+    if not consented:
+        return again("Please tick the consent box to receive texts from Circle Planner.")
+
+    ip = (request.headers.get("X-Forwarded-For", "").split(",")[0].strip()
+          or request.remote_addr or "unknown")
+    if _ip_limited(ip):
+        return again("Too many sign-up attempts from this connection. Please try again later.")
+
+    masked = "••• ••• " + number[-4:]
+    now = time.time()
+    already = CONSENT_STATE.get(number) in ("awaiting_consent", "consented")
+    recent = now - LAST_FORM_TEXT.get(number, 0) < NUMBER_COOLDOWN_SECONDS
+
+    record = {
+        "at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+        "number": number,
+        "invited_by": invited_by,
+        "form_consent_checkbox": True,
+    }
+
+    if already or recent:
+        # Don't re-text (prevents using the form to spam one number) and
+        # don't reveal whether this number is already in the system.
+        record["action"] = "skipped_duplicate_or_cooldown"
+        _log_opt_in(record)
+        return render_template("thanks.html", sent=True, masked=masked)
+
+    sent, err = _send_sms(number, CONSENT_DISCLOSURE)
+    record["action"] = "disclosure_text_sent" if sent else f"send_failed: {err}"
+    _log_opt_in(record)
+
+    if sent:
+        CONSENT_STATE[number] = "awaiting_consent"
+        LAST_FORM_TEXT[number] = now
+    return render_template("thanks.html", sent=sent, masked=masked)
+
+
+# -------------------------------------------------------------- webhook
+
 @app.route("/sms", methods=["POST"])
 def incoming_sms():
     from_number = request.form.get("From")
@@ -68,12 +160,6 @@ def incoming_sms():
 
 
 def _route_message(from_number: str, body: str) -> str:
-    """
-    The real consent gate. This is the part that was previously a
-    placeholder echo — it now actually enforces JOIN -> disclosure -> YES
-    before anything else happens, per the Terms/Privacy pages and
-    onboarding_script.md.
-    """
     normalized = body.strip().upper()
     state = CONSENT_STATE.get(from_number, "new")
 
@@ -86,39 +172,62 @@ def _route_message(from_number: str, body: str) -> str:
         return HELP_MESSAGE
 
     if state == "new":
-        if normalized == "JOIN":
-            CONSENT_STATE[from_number] = "awaiting_consent"
-            return CONSENT_DISCLOSURE
-        # Anything else from an unknown number is not onboarded yet —
-        # don't start collecting data, just point them at the real entry.
-        return "Hi! To join Circle Planner, text JOIN to get started."
+        # Texting in is not consent. The only way in is the join form.
+        return f"To join Circle Planner, sign up here: {PUBLIC_BASE_URL}/join"
 
     if state == "awaiting_consent":
         if normalized == "YES":
             CONSENT_STATE[from_number] = "consented"
             return ENROLLMENT_CONFIRMATION
-        # Per onboarding_script.md: a hedge, a question, or silence does
-        # not count as YES. Re-send the disclosure once rather than guess.
+        # A hedge, a question, or silence does not count as YES.
         return CONSENT_DISCLOSURE
 
     if state == "consented":
-        # --- Real onboarding/event logic plugs in here next. ---
-        # This is the boundary: everything before this point is the
-        # consent gate (done, for real). Everything after it is
-        # onboarding_script.md's six questions and, eventually, the
-        # engine (evaluate_event_possibility, receive_confirmation,
-        # handle_fast_event) — not yet wired in.
+        # Real onboarding/event logic plugs in here next.
         return (
             f"Got it: \"{body}\". (Consent is confirmed — real onboarding "
             f"questions aren't wired in yet.)"
         )
 
-    return "Something went wrong — text JOIN to start over."
+    return f"Something went wrong — sign up again at {PUBLIC_BASE_URL}/join"
 
 
-@app.route("/", methods=["GET"])
-def health_check():
-    return "Server is up. Waiting for texts."
+# -------------------------------------------------------------- helpers
+
+def _normalize_us_number(raw: str):
+    digits = re.sub(r"\D", "", raw or "")
+    if len(digits) == 11 and digits.startswith("1"):
+        digits = digits[1:]
+    if len(digits) != 10 or digits[0] in "01" or digits[3] in "01":
+        return None
+    return "+1" + digits
+
+
+def _ip_limited(ip: str) -> bool:
+    now = time.time()
+    hits = [t for t in IP_HITS.get(ip, []) if now - t < IP_WINDOW_SECONDS]
+    hits.append(now)
+    IP_HITS[ip] = hits
+    return len(hits) > IP_LIMIT
+
+
+def _log_opt_in(record: dict):
+    OPT_INS.append(record)
+    print("[OPT_IN] " + json.dumps(record))
+
+
+def _send_sms(to: str, body: str):
+    sid = os.environ.get("TWILIO_ACCOUNT_SID")
+    token = os.environ.get("TWILIO_AUTH_TOKEN")
+    service = os.environ.get("TWILIO_MESSAGING_SERVICE_SID")
+    if not (sid and token and service):
+        return False, "twilio credentials not configured on this server"
+    try:
+        from twilio.rest import Client
+        Client(sid, token).messages.create(to=to, messaging_service_sid=service, body=body)
+        return True, None
+    except Exception as exc:  # report, never crash the form
+        return False, str(exc)[:200]
 
 
 if __name__ == "__main__":

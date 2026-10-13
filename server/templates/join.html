@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block title %}Join Circle Planner{% endblock %}
+{% block content %}
+<div class="page">
+  <div class="eyebrow">Join</div>
+  <h1>Join Circle Planner</h1>
+  <div class="subtitle">A small, invite-only group that plans real-world get-togethers by text. Operated by Ryan Gurule.</div>
+
+  <div class="callout">
+    <strong>What you'll receive.</strong> Text messages from Circle Planner about event planning, availability, and reminders: proposals for get-togethers, questions about timing and what you can bring, schedule changes, and reminders. Message frequency varies. This is a private group, not a marketing list.
+  </div>
+
+  <form class="joinform" method="post" action="/join">
+    <div class="row">
+      <label class="field" for="phone">Mobile phone number</label>
+      <input id="phone" name="phone" type="tel" inputmode="tel" autocomplete="tel" placeholder="(555) 123-4567" value="{{ phone or '' }}" required>
+      <div class="hint">US mobile numbers only.</div>
+    </div>
+
+    <div class="row">
+      <label class="field" for="invited_by">Which member invited you?</label>
+      <input id="invited_by" name="invited_by" type="text" autocomplete="off" value="{{ invited_by or '' }}" required>
+      <div class="hint">Circle Planner is invite-only. Sign-ups that can't be matched to a member who invited you are not admitted.</div>
+    </div>
+
+    <label class="consent">
+      <input type="checkbox" name="consent" value="yes" required>
+      <span>I agree to receive text messages from Circle Planner (operated by Ryan Gurule) about event planning, availability, and reminders at the mobile number above. Message frequency varies. Msg &amp; data rates may apply. Reply <strong>HELP</strong> for help or <strong>STOP</strong> to opt out at any time. Consent is not a condition of participation. See the <a href="/terms">Terms of Service</a> and <a href="/privacy">Privacy Policy</a>.</span>
+    </label>
+
+    {% if error %}<div class="error" role="alert">{{ error }}</div>{% endif %}
+
+    <button class="btn" type="submit" style="margin-top:18px">Yes, sign me up!</button>
+  </form>
+
+  <p class="contact">After you submit, we'll text you once to confirm. You are enrolled only after you reply YES to that text.</p>
+
+  <footer>
+    <a href="/terms">Terms of Service</a> · <a href="/privacy">Privacy Policy</a>
+  </footer>
+</div>
+{% endblock %}

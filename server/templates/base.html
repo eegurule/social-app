@@ -1,0 +1,268 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{% block title %}Circle Planner{% endblock %}</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Source+Serif+4:wght@400;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap">
+<style>
+  :root {
+    --bg: #faf8f5;
+    --surface: #ffffff;
+    --border: #e4ddd0;
+    --ink: #2a2622;
+    --ink-soft: #5c564c;
+    --accent: #8a5a3c;
+    --accent-soft: #f0e4d8;
+    --tier1: #3d6b52;
+    --tier1-soft: #e6f0ea;
+    --tier2: #a3492f;
+    --tier2-soft: #f7e6df;
+    --rule: #d8cfbf;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #1c1a17;
+      --surface: #24211d;
+      --border: #3a352d;
+      --ink: #ede7dc;
+      --ink-soft: #b3aa9a;
+      --accent: #d99a6c;
+      --accent-soft: #332920;
+      --tier1: #7fbf9e;
+      --tier1-soft: #23302a;
+      --tier2: #e08a6c;
+      --tier2-soft: #332420;
+      --rule: #3a352d;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #1c1a17;
+    --surface: #24211d;
+    --border: #3a352d;
+    --ink: #ede7dc;
+    --ink-soft: #b3aa9a;
+    --accent: #d99a6c;
+    --accent-soft: #332920;
+    --tier1: #7fbf9e;
+    --tier1-soft: #23302a;
+    --tier2: #e08a6c;
+    --tier2-soft: #332420;
+    --rule: #3a352d;
+    color-scheme: dark;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: 'Source Serif 4', Georgia, 'Times New Roman', serif;
+    line-height: 1.55;
+    padding-inline: 20px;
+    padding-block: 40px;
+  }
+  .page { max-width: 720px; margin: 0 auto; }
+
+  .eyebrow {
+    font-family: 'Inter', -apple-system, sans-serif;
+    font-size: 12px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--accent);
+    font-weight: 600;
+  }
+  h1 {
+    font-family: 'Source Serif 4', Georgia, serif;
+    font-size: clamp(28px, 6vw, 40px);
+    font-weight: 600;
+    margin: 8px 0 4px;
+    text-wrap: balance;
+  }
+  .subtitle {
+    font-family: 'Inter', -apple-system, sans-serif;
+    color: var(--ink-soft);
+    font-size: 15px;
+    margin-bottom: 28px;
+  }
+  .meta {
+    font-family: 'Inter', -apple-system, sans-serif;
+    font-size: 13px;
+    color: var(--ink-soft);
+    border-top: 1px solid var(--rule);
+    border-bottom: 1px solid var(--rule);
+    padding-block: 12px;
+    margin-bottom: 32px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 18px;
+  }
+  .meta strong { color: var(--ink); font-weight: 600; }
+
+  .callout {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 18px 20px;
+    margin-block: 28px;
+    font-family: 'Inter', -apple-system, sans-serif;
+    font-size: 14.5px;
+    color: var(--ink-soft);
+  }
+  .callout strong { color: var(--ink); }
+
+  h2 {
+    font-family: 'Inter', -apple-system, sans-serif;
+    font-size: 13px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    font-weight: 700;
+    color: var(--accent);
+    margin: 40px 0 4px;
+  }
+  h2 .num {
+    font-variant-numeric: tabular-nums;
+    color: var(--ink-soft);
+    margin-right: 8px;
+  }
+  h3 {
+    font-family: 'Source Serif 4', Georgia, serif;
+    font-size: 19px;
+    font-weight: 600;
+    margin: 20px 0 6px;
+  }
+  p { margin: 10px 0; }
+  ul, ol { margin: 10px 0; padding-left: 22px; }
+  li { margin: 5px 0; }
+  strong { font-weight: 700; }
+
+  .tierwrap {
+    display: grid;
+    gap: 14px;
+    grid-template-columns: 1fr;
+    margin-block: 16px;
+  }
+  @media (min-width: 620px) {
+    .tierwrap { grid-template-columns: 1fr 1fr; }
+  }
+  .tier {
+    border-radius: 10px;
+    padding: 16px 18px;
+    border: 1px solid var(--border);
+  }
+  .tier.t1 { background: var(--tier1-soft); }
+  .tier.t2 { background: var(--tier2-soft); }
+  .tier-label {
+    font-family: 'Inter', -apple-system, sans-serif;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+  .tier.t1 .tier-label { color: var(--tier1); }
+  .tier.t2 .tier-label { color: var(--tier2); }
+  .tier p, .tier ul { font-size: 14.5px; margin: 6px 0; }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-family: 'Inter', -apple-system, sans-serif;
+    font-size: 14px;
+    margin-block: 14px;
+  }
+  .tablewrap { overflow-x: auto; }
+  th, td {
+    text-align: left;
+    padding: 9px 12px;
+    border-bottom: 1px solid var(--border);
+    vertical-align: top;
+  }
+  th {
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--ink-soft);
+    font-weight: 600;
+  }
+
+  .ladder-item {
+    border-left: 3px solid var(--accent);
+    padding: 4px 0 4px 14px;
+    margin: 12px 0;
+  }
+  .ladder-item .lvl {
+    font-family: 'Inter', -apple-system, sans-serif;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--accent);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  code, .mono {
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-size: 0.9em;
+    background: var(--accent-soft);
+    padding: 1px 5px;
+    border-radius: 4px;
+  }
+
+  .optout-box {
+    background: var(--surface);
+    border: 1.5px solid var(--accent);
+    border-radius: 10px;
+    padding: 20px;
+    margin-block: 16px;
+    font-family: 'Inter', -apple-system, sans-serif;
+    font-size: 14.5px;
+  }
+  .optout-box .stop {
+    display: inline-block;
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-weight: 700;
+    background: var(--accent);
+    color: var(--surface);
+    padding: 2px 8px;
+    border-radius: 5px;
+    letter-spacing: 0.03em;
+  }
+
+  hr.rule {
+    border: none;
+    border-top: 1px solid var(--rule);
+    margin: 36px 0;
+  }
+
+  .contact {
+    font-family: 'Inter', -apple-system, sans-serif;
+    font-size: 14.5px;
+    color: var(--ink-soft);
+  }
+
+  footer {
+    font-family: 'Inter', -apple-system, sans-serif;
+    font-size: 12.5px;
+    color: var(--ink-soft);
+    margin-top: 48px;
+    padding-top: 20px;
+    border-top: 1px solid var(--rule);
+  }
+
+  a.crosslink, .page a { color: var(--accent); }
+  .joinform { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 22px; margin-block: 24px; font-family: 'Inter', -apple-system, sans-serif; }
+  .joinform label.field { display: block; font-size: 14px; font-weight: 600; margin-bottom: 6px; }
+  .joinform input[type=tel], .joinform input[type=text] { width: 100%; font: inherit; font-size: 16px; padding: 10px 12px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg); color: var(--ink); }
+  .joinform .row { margin-bottom: 18px; }
+  .joinform .hint { font-size: 12.5px; color: var(--ink-soft); margin-top: 4px; }
+  .consent { display: flex; gap: 12px; align-items: flex-start; font-size: 13.5px; line-height: 1.5; color: var(--ink-soft); margin: 22px 0; }
+  .consent input { margin-top: 3px; width: 18px; height: 18px; flex: none; }
+  .consent a { text-decoration: underline; }
+  .btn { font: inherit; font-family: 'Inter', -apple-system, sans-serif; font-size: 16px; font-weight: 600; background: var(--accent); color: var(--surface); border: 0; border-radius: 8px; padding: 12px 22px; cursor: pointer; width: 100%; }
+  .error { background: var(--tier2-soft); color: var(--tier2); border: 1px solid var(--tier2); border-radius: 8px; padding: 12px 14px; margin-top: 18px; font-family: 'Inter', -apple-system, sans-serif; font-size: 14px; }
+</style>
+</head>
+<body>
+{% block content %}{% endblock %}
+</body>
+</html>

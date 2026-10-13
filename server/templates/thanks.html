@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block title %}Check your phone - Circle Planner{% endblock %}
+{% block content %}
+<div class="page">
+  <div class="eyebrow">Almost there</div>
+  {% if sent %}
+  <h1>Check your phone</h1>
+  <div class="subtitle">We've sent a text from Circle Planner to {{ masked }}. Reply <strong>YES</strong> to that text to finish joining.</div>
+  <div class="callout">
+    Msg &amp; data rates may apply. Message frequency varies. Reply HELP for help or STOP to opt out at any time. You are not enrolled until you reply YES.
+  </div>
+  {% else %}
+  <h1>We couldn't send your text</h1>
+  <div class="subtitle">Your sign-up was received, but the confirmation text to {{ masked }} could not be sent right now. You are not enrolled yet. Please try again later or check with the member who invited you.</div>
+  {% endif %}
+  <footer>
+    <a href="/terms">Terms of Service</a> · <a href="/privacy">Privacy Policy</a>
+  </footer>
+</div>
+{% endblock %}
