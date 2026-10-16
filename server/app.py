@@ -49,15 +49,15 @@ CONSENT_DISCLOSURE = (
     "By replying YES, you consent to receive text messages from Circle "
     "Planner about event planning, availability, and reminders. This is "
     "a private, invite-only group — not a marketing list. Consent is not "
-    "a condition of participation. Msg & data rates may apply. Message "
-    "frequency varies. Reply STOP at any time to opt out."
+    "a condition of participation. Up to 30 msgs/month. Msg & data rates "
+    "may apply. Reply HELP for help or STOP at any time to opt out."
 )
 
 ENROLLMENT_CONFIRMATION = (
     "You're in! You'll get texts from Circle Planner about event planning, "
     "availability, and reminders. This is a private group, not marketing. "
-    "Msg & data rates may apply, frequency varies. Reply STOP to opt out "
-    "anytime."
+    "Up to 30 msgs/month. Msg & data rates may apply. Reply HELP for help, "
+    "STOP to opt out anytime."
 )
 
 OPT_OUT_CONFIRMATION = (
