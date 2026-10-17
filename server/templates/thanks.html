@@ -1,17 +1,22 @@
 {% extends "base.html" %}
-{% block title %}Check your phone - Circle Planner{% endblock %}
+{% block title %}Request received - Circle Planner{% endblock %}
 {% block content %}
 <div class="page">
+  {% if mode == "texted" %}
   <div class="eyebrow">Almost there</div>
-  {% if sent %}
   <h1>Check your phone</h1>
-  <div class="subtitle">We've sent a text from Circle Planner to {{ masked }}. Reply <strong>YES</strong> to that text to finish joining.</div>
+  <div class="subtitle">We've received your request. We've also sent a text from Circle Planner to {{ masked }}. Reply <strong>YES</strong> to that text to start receiving messages.</div>
   <div class="callout">
-    Msg &amp; data rates may apply. Up to 30 messages per month. Reply HELP for help or STOP to opt out at any time. You are not enrolled until you reply YES.
+    Msg &amp; data rates may apply. Up to 30 messages per month. Reply HELP for help or STOP to opt out at any time. You will not receive further texts unless you reply YES.
   </div>
-  {% else %}
+  {% elif mode == "text_failed" %}
+  <div class="eyebrow">Request received</div>
   <h1>We couldn't send your text</h1>
-  <div class="subtitle">Your sign-up was received, but the confirmation text to {{ masked }} could not be sent right now. You are not enrolled yet. Please try again later or check with the member who invited you.</div>
+  <div class="subtitle">Your invitation request was received, but the confirmation text to {{ masked }} could not be sent right now, so you will not receive texts yet. We'll follow up by email.</div>
+  {% else %}
+  <div class="eyebrow">Request received</div>
+  <h1>Thanks, we've got your request</h1>
+  <div class="subtitle">We'll follow up by email. You chose not to receive text messages, so Circle Planner will not text you. If you change your mind, you can come back to this page and tick the text-message box.</div>
   {% endif %}
   <footer>
     <a href="/terms">Terms of Service</a> · <a href="/privacy">Privacy Policy</a>

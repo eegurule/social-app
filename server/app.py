@@ -1,9 +1,10 @@
 """
 Webhook + join form for Circle Planner.
 
-Opt-in path (the only one): the public /join form collects a mobile
-number, the inviting member's name, and an unchecked consent box. Submitting
-sends ONE text containing the full disclosure; the person is enrolled only
+The public /join page is an invitation-request form. Texting is OPTIONAL:
+the phone number and the SMS consent checkbox are unticked by default and
+not required. Only if the box is ticked do we text the number, with ONE
+message containing the full disclosure; the person is enrolled in texts only
 after replying YES (double opt-in). STOP and HELP work at any point.
 
 Nothing past the consent gate is wired to the real engine yet -- once
@@ -29,6 +30,8 @@ from flask import Flask, render_template, request
 from twilio.twiml.messaging_response import MessagingResponse
 
 app = Flask(__name__)
+
+EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 
 PUBLIC_BASE_URL = os.environ.get("PUBLIC_BASE_URL", "https://social-app-dzp6.onrender.com").rstrip("/")
 SUPPORT_EMAIL = os.environ.get("SUPPORT_EMAIL", "").strip()
@@ -90,47 +93,72 @@ def terms():
 
 @app.route("/join", methods=["GET", "POST"])
 def join():
+    """
+    Invitation-request form. Name, inviting member and email are required;
+    the phone number and the SMS consent checkbox are OPTIONAL and unchecked
+    by default. Texts are sent only if the person ticks the box, and even
+    then enrollment needs a YES reply (double opt-in).
+    """
     if request.method == "GET":
         return render_template("join.html")
 
-    raw_phone = request.form.get("phone", "")
+    name = request.form.get("name", "").strip()
     invited_by = request.form.get("invited_by", "").strip()
-    consented = request.form.get("consent") == "yes"
+    email = request.form.get("email", "").strip()
+    raw_phone = request.form.get("phone", "")
+    wants_texts = request.form.get("consent") == "yes"
 
     def again(error):
-        return render_template("join.html", error=error, phone=raw_phone, invited_by=invited_by), 400
+        return render_template(
+            "join.html", error=error, name=name, invited_by=invited_by,
+            email=email, phone=raw_phone, wants_texts=wants_texts,
+        ), 400
 
-    number = _normalize_us_number(raw_phone)
-    if not number:
-        return again("Please enter a valid US mobile number.")
+    if not name or len(name) > 120:
+        return again("Please enter your name.")
     if not invited_by or len(invited_by) > 120:
         return again("Please tell us which member invited you.")
-    if not consented:
-        return again("Please tick the consent box to receive texts from Circle Planner.")
+    if not EMAIL_RE.match(email) or len(email) > 254:
+        return again("Please enter a valid email address.")
+
+    number = None
+    if wants_texts:
+        number = _normalize_us_number(raw_phone)
+        if not number:
+            return again("To get texts, please enter a valid US mobile number. "
+                         "Or untick the box to request an invitation without texts.")
 
     ip = (request.headers.get("X-Forwarded-For", "").split(",")[0].strip()
           or request.remote_addr or "unknown")
     if _ip_limited(ip):
-        return again("Too many sign-up attempts from this connection. Please try again later.")
-
-    masked = "••• ••• " + number[-4:]
-    now = time.time()
-    already = CONSENT_STATE.get(number) in ("awaiting_consent", "consented")
-    recent = now - LAST_FORM_TEXT.get(number, 0) < NUMBER_COOLDOWN_SECONDS
+        return again("Too many requests from this connection. Please try again later.")
 
     record = {
         "at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
-        "number": number,
+        "name": name,
         "invited_by": invited_by,
-        "form_consent_checkbox": True,
+        "email": email,
+        "texts_requested": wants_texts,
     }
+
+    if not wants_texts:
+        # No phone number is read, stored, or texted when the box is unticked.
+        record["action"] = "invitation_request_no_texts"
+        _log_opt_in(record)
+        return render_template("thanks.html", mode="no_texts")
+
+    record["number"] = number
+    masked = "\u2022\u2022\u2022 \u2022\u2022\u2022 " + number[-4:]
+    now = time.time()
+    already = CONSENT_STATE.get(number) in ("awaiting_consent", "consented")
+    recent = now - LAST_FORM_TEXT.get(number, 0) < NUMBER_COOLDOWN_SECONDS
 
     if already or recent:
         # Don't re-text (prevents using the form to spam one number) and
         # don't reveal whether this number is already in the system.
         record["action"] = "skipped_duplicate_or_cooldown"
         _log_opt_in(record)
-        return render_template("thanks.html", sent=True, masked=masked)
+        return render_template("thanks.html", mode="texted", masked=masked)
 
     sent, err = _send_sms(number, CONSENT_DISCLOSURE)
     record["action"] = "disclosure_text_sent" if sent else f"send_failed: {err}"
@@ -139,7 +167,8 @@ def join():
     if sent:
         CONSENT_STATE[number] = "awaiting_consent"
         LAST_FORM_TEXT[number] = now
-    return render_template("thanks.html", sent=sent, masked=masked)
+        return render_template("thanks.html", mode="texted", masked=masked)
+    return render_template("thanks.html", mode="text_failed", masked=masked)
 
 
 # -------------------------------------------------------------- webhook
